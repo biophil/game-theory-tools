@@ -23,13 +23,6 @@ class Game :
         self.players = players
         self.actions = actions
         self.pmat = pmat
-        
-        self.checkWellPosed()
-        
-    def checkWellPosed(self):
-        return
-        # TO DO: check that the payoff matrices have correct dimensions
-        #for player in self.players:
             
     def checkActions(self) :
         if not self.n == len(self.actions):
@@ -65,34 +58,3 @@ class GameSimple(Game) :
         self.pmat = pmat
         self.checkpmat()
 
-class GameVerbose(Game):
-# Generic class for normal-form game
-
-    def __init__(self,players,actions,pmat) :
-    # players: length-n list of players or simply n
-    # actions: length-n list of lists of actions, or simply list of |A_i|
-    # pmat: 2^n dimensional array?
-        
-        try : # check if players arg is list or int
-            self.n = len(players) # if we get a TypeError, it is an int
-            self.players = players
-        except TypeError: # if players argument is n
-            self.n = players
-            self.players = []
-            for player in range(players):
-                self.players.append(Player(player))
-                
-        # check if actions arg is the proper length
-        self.checkWellPosed()
-        
-        try : # check if actions arg is list or int
-            len(actions[0]) # checking if actions is list of lists
-            self.actions = actions
-        except TypeError :
-            self.actions = [None]*self.n # this is the case that actions is list of numbers
-            for player in range(self.n) :
-                self.actions[player] = []
-                for action in range(actions[player]) :
-                    self.actions[player].append(Action(action))
-                    
-        self.pmat = pmat
