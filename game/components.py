@@ -24,14 +24,24 @@ class Game :
         self.actions = actions
         self.payoffs = payoffs
         
-        self.checkWellPosed(self)
+        self.checkWellPosed()
         
     def checkWellPosed(self):
-        if not self.n == len(self.actions):
-            raise IndexError('Number of players does not match number of action sets')
+        return
         # TO DO: check that the payoff matrices have correct dimensions
         #for player in self.players:
             
+    def checkActions(self) :
+        if not self.n == len(self.actions):
+            raise IndexError('Number of players does not match number of action sets')
+            
+    def checkPayoffs(self) :
+        if not self.n + 1 == self.payoffs.dim :
+            raise IndexError('payoff matrix has wrong number of dimensions')
+        for player in self.players :
+            if not len(self.actions[player]) == np.shape(self.payoffs)[player] :
+                raise IndexError('a player has the wrong number of payoffs versus actions')
+
 
 class GameSimple(Game) :
 # This class does not use the Player or Action classes, rather referring to all by numeric index
@@ -44,11 +54,12 @@ class GameSimple(Game) :
     
         self.n = players
         self.players = np.array(range(players))
-        self.actions = [None]*self.n
-        for player in self.actions :
+        self.actions = [None]*len(actions)
+        self.checkActions()
+        for player in self.players :
             self.actions[player] = np.array(range(actions[player]))
         self.payoffs = payoffs
-        self.checkWellPosed(self)
+        self.checkPayoffs()
 
 class GameVerbose(Game):
 # Generic class for normal-form game
@@ -68,7 +79,7 @@ class GameVerbose(Game):
                 self.players.append(Player(player))
                 
         # check if actions arg is the proper length
-        checkWellPosed(self)
+        self.checkWellPosed()
         
         try : # check if actions arg is list or int
             len(actions[0]) # checking if actions is list of lists
