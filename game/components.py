@@ -6,6 +6,9 @@ Created on Sat Jun 25 15:35:22 2016
 """
 import numpy as np
 
+# small number for zero-checking floats:
+myEps = 1e-10
+
 class Player():
 # Generic class for agent in normal-form game
     def __init__(self,name,actions=None) :
@@ -38,6 +41,37 @@ class Game :
                 raise IndexError(errMsg)
         if not self.n == np.shape(self.pmat)[self.n] :
             raise IndexError('the wrong number of players\' actions are being described')
+            
+    def checkActionProfile(self,actionProfile) :
+        for player in range(len(actionProfile)) :
+            stratWeights = np.array(actionProfile[player])
+            # first check that the strategy has the correct length:
+            if not len(self.actions[player]) == len(stratWeights) :
+                raise IndexError('player %d (0-indexed) does not have correct number of action weights specified' % player)
+            # then check that every action weight is nonnegative:
+            for action in range(len(stratWeights)) :
+                if not stratWeights[action] >= -myEps :
+                    raise TypeError('action %d for player %d has a negative weight' %(action, player)) #TypeError might not be best exception
+            # finally check that mixed weights add to 1 (so it's valid probabilities):
+            if not np.abs(np.sum(stratWeights)-1) <= myEps :
+                raise TypeError('action weights for player %d do not sum to 1' % player) # again, TypeError might not be best
+            
+    def payoffs(self,playersArg,actionProfile) :
+        # returns the payoffs experienced by playersArg given mixed strategies actionProfile
+        # playersArg: list of player indices we wish to check
+        # actionProfile: N-D list of 1-D arrays of mixed strategies;
+        #    len(actionProfile[i]) = len(self.actions[i])
+        # output: array of dimension len(playersArg) of player payoffs
+        ap = np.array(actionProfile)
+        self.checkActionProfile(ap)
+        # first, collapse the payoff matrix using the action profile:
+        pmatCollapsed = np.array(self.pmat)
+        for player in self.players :
+            vecShape = np.ones(len(np.shape(pmatCollapsed)))
+            vecShape[0] = len(ap[player]) # vecShape ensures that strategy weights are multiplied in properly
+            thisPmat = pmatCollapsed*np.reshape(ap[player],vecShape) # multiply strat weights
+            pmatCollapsed = np.sum(thisPmat,0) # sum along dimension 0
+        return pmatCollapsed[np.array(playersArg)]
 
 
 class GameSimple(Game) :
