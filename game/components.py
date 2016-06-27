@@ -18,11 +18,11 @@ class Action():
 
 class Game :
 # Generic class for normal-form game
-    def __init__(self,players,actions,payoffs) :
+    def __init__(self,players,actions,pmat) :
         self.n = len(players)
         self.players = players
         self.actions = actions
-        self.payoffs = payoffs
+        self.pmat = pmat
         
         self.checkWellPosed()
         
@@ -35,22 +35,26 @@ class Game :
         if not self.n == len(self.actions):
             raise IndexError('Number of players does not match number of action sets')
             
-    def checkPayoffs(self) :
-        if not self.n + 1 == self.payoffs.dim :
+    def checkpmat(self) :
+        # checks if payoff matrices are well-define dimensionally (does not check array contents)
+        if not self.n + 1 == self.pmat.ndim :
             raise IndexError('payoff matrix has wrong number of dimensions')
         for player in self.players :
-            if not len(self.actions[player]) == np.shape(self.payoffs)[player] :
-                raise IndexError('a player has the wrong number of payoffs versus actions')
+            if not len(self.actions[player]) == np.shape(self.pmat)[player] :
+                errMsg = 'Player %d (0-indexed) has the wrong number of actions' % player
+                raise IndexError(errMsg)
+        if not self.n == np.shape(self.pmat)[self.n] :
+            raise IndexError('the wrong number of players\' actions are being described')
 
 
 class GameSimple(Game) :
 # This class does not use the Player or Action classes, rather referring to all by numeric index
-    def __init__(self,players,actions,payoffs) :
+    def __init__(self,players,actions,pmat) :
     # players: int n
     # actions: n-D list of |A_i|
-    # payoffs: high-dimensional array:
-    #   dim i corresponds to player i's action,
-    #   dim n tells which player's payoff we're talking about 
+    # pmat: (n+1)-dimensional array:
+    #   dim i corresponds to player i's action; np.shape(pmat[i])=|A_i|
+    #   dim n tells which player's payoff we're talking about ; np.shape(pmat[n])=n
     
         self.n = players
         self.players = np.array(range(players))
@@ -58,16 +62,16 @@ class GameSimple(Game) :
         self.checkActions()
         for player in self.players :
             self.actions[player] = np.array(range(actions[player]))
-        self.payoffs = payoffs
-        self.checkPayoffs()
+        self.pmat = pmat
+        self.checkpmat()
 
 class GameVerbose(Game):
 # Generic class for normal-form game
 
-    def __init__(self,players,actions,payoffs) :
+    def __init__(self,players,actions,pmat) :
     # players: length-n list of players or simply n
     # actions: length-n list of lists of actions, or simply list of |A_i|
-    # payoffs: 2^n dimensional array?
+    # pmat: 2^n dimensional array?
         
         try : # check if players arg is list or int
             self.n = len(players) # if we get a TypeError, it is an int
@@ -91,4 +95,4 @@ class GameVerbose(Game):
                 for action in range(actions[player]) :
                     self.actions[player].append(Action(action))
                     
-        self.payoffs = payoffs
+        self.pmat = pmat
