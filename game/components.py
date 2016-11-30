@@ -93,13 +93,15 @@ class NormalFormGame :
             
     def payoffOptions(self,actionProfile,player) :
         # returns the payoffs seen by player for his possible actions, given the actions of others
-        ap = np.array(actionProfile).copy()
-        actionsToCheck = self.actions[player] # get all of this player's actions
-        payoffs = []
-        for action in actionsToCheck :
-            ap[player] = action
-            payoffs.append(self.payoffs(ap)[player])
-        return np.array(payoffs)
+        idxlist = []
+        for i,action in enumerate(actionProfile) :
+            if i==player :
+                idxlist.append(slice(0,len(self.actions[player])))
+            else :
+                idxlist.append(action)
+        indices = (player,)
+        indices += tuple(self.help.naturalIndexToInternal(idxlist))
+        return self.pmat[indices]
         
     def log_linear_learn(self,T,maxIter=10000,verbose=False) :
         itr = 0
