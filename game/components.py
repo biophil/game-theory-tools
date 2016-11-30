@@ -80,7 +80,7 @@ class NormalFormGame :
         if initState :
             self.state = initState.copy()
         else :
-            self.state = np.zeros(self.n)
+            self.state = np.array([0]*self.n)
         
     def payoffs(self,actionProfile) :
         # actionProfile is natural-indexed
