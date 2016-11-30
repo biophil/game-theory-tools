@@ -31,11 +31,11 @@ class Helpers() :
         
     def internalIndexToNatural(self,iterable) :
         # expects a length-n numpy array, returns a copy that is human-readable
-        return np.concatenate((iterable[-2:].copy(),iterable[0:-2].copy()))
+        return np.concatenate((iterable[-2:],iterable[0:-2]))
         
     def naturalIndexToInternal(self,iterable) :
         # expects a length-n numpy array, returns a copy that is matrix-readable
-        return np.concatenate((iterable[2:].copy(),iterable[0:2].copy()))
+        return np.concatenate((iterable[2:],iterable[0:2]))
         
     def log_linear_probs(self,array,T) :
         ar = expTemp(array,T)
@@ -85,7 +85,8 @@ class NormalFormGame :
     def payoffs(self,actionProfile) :
         # actionProfile is natural-indexed
         # returns payoffs for each player (natural-indexed) 
-        MRactionProfile = self.help.naturalIndexToInternal(actionProfile)
+#        MRactionProfile = self.help.naturalIndexToInternal(actionProfile)
+        MRactionProfile = np.concatenate((actionProfile[2:],actionProfile[0:2])) #faster for some dumb reason
         indices = (slice(0,self.n),)
         indices += tuple(MRactionProfile)
         return self.pmat[indices]
