@@ -5,9 +5,56 @@ Created on Sat Jun 25 15:35:22 2016
 @author: Philip
 """
 import numpy as np
+import numpy.random as rnd
+import matplotlib.pyplot as plt
 
 # small number for zero-checking floats:
 myEps = 1e-10
+
+def expTemp(U,T) :
+    return np.exp(U/T)
+
+class Helpers() :
+    def __init__(self,n=None) :
+        self.n = n
+    
+    def getPayoffMatrixShape(self,players,actions) :
+        return [len(players)]+[len(act) for act in actions[2:]] + [len(act) for act in actions[0:2]]
+        
+    def playerIndex(self,player,n=None) :
+        # inputs the real player index (0-indexed), outputs the internal index
+        # i.e.: 2->0, 3->1, 1->(n-1), 0->(n-2)
+        if n is None :
+            n = self.n
+        assert player >= 0 and player <n
+        return (player+1)%n
+        
+    def internalIndexToNatural(self,iterable) :
+        # expects a length-n numpy array, returns a copy that is human-readable
+        return np.concatenate((iterable[-2:].copy(),iterable[0:-2].copy()))
+        
+    def naturalIndexToInternal(self,iterable) :
+        # expects a length-n numpy array, returns a copy that is matrix-readable
+        return np.concatenate((iterable[2:].copy(),iterable[0:2].copy()))
+        
+    def log_linear_probs(self,array,T) :
+        ar = expTemp(array,T)
+        return ar/sum(ar)
+        
+    def plotLearningResults(self,mem,game) :
+        # note: this is currently only for identical-interest games.
+        # it plots the column-player payoff
+        n = game.n
+        P = np.zeros([n,len(mem)])
+        plt.plot()
+        for idx,row in enumerate(P) :
+            plt.subplot(n+1,1,idx+1)
+            P[idx] = [st[idx] for st in mem]
+            plt.plot(P[idx])
+        U = [game.payoffs(st)[1] for st in mem]
+        plt.subplot(n+1,1,n+1)
+        plt.plot(U)
+        
 
 class Player():
 # Generic class for agent in normal-form game
@@ -19,13 +66,70 @@ class Action():
     def __init__(self,name,actions=None) :
         self.name = name
 
+class NormalFormGame :
+    def __init__(self,players,actions,pmat,initState=None) :
+        self.n = len(players)
+        self.players = np.array(players)
+        self.actions = np.array(actions)
+        self.pmat = np.array(pmat)
+        self.help = Helpers(self.n)
+        self._initializeState(initState)
+        rnd.seed(1)
+        
+    def _initializeState(self,initState=None) :
+        if initState :
+            self.state = initState.copy()
+        else :
+            self.state = np.zeros(self.n)
+        
+    def payoffs(self,actionProfile) :
+        # actionProfile is natural-indexed
+        # returns payoffs for each player (natural-indexed) 
+        MRactionProfile = self.help.naturalIndexToInternal(actionProfile)
+        indices = (slice(0,self.n),)
+        indices += tuple(MRactionProfile)
+        return self.pmat[indices]
+            
+    def payoffOptions(self,actionProfile,player) :
+        # returns the payoffs seen by player for his possible actions, given the actions of others
+        ap = np.array(actionProfile).copy()
+        actionsToCheck = self.actions[player] # get all of this player's actions
+        payoffs = []
+        for action in actionsToCheck :
+            ap[player] = action
+            payoffs.append(self.payoffs(ap)[player])
+        return np.array(payoffs)
+        
+    def log_linear_learn(self,T,maxIter=10000,verbose=False) :
+        itr = 0
+        stateMemory = []
+        while itr < maxIter :
+            stateMemory.append(self.state.copy())
+            player = rnd.choice(self.players)
+            po = self.payoffOptions(self.state,player)
+            probs = self.help.log_linear_probs(po,T)
+            if verbose :
+                print('')
+                print('state:     ' + str(self.state))
+            self.state[player] = rnd.choice(self.actions[player],p=probs)
+            if verbose :
+                print('player ' + str(player) + ' revising with action probs ' + str(np.round(probs,3)))
+                print('new state: ' + str(self.state))
+            itr += 1
+        return stateMemory
+        
+    
+ 
 class Game :
 # Generic class for normal-form game
     def __init__(self,players,actions,pmat) :
+        # players is list or array of players or indices
+        # actions is list of lists of players' actions
+        # pmat is payoff matrix
         self.n = len(players)
-        self.players = players
-        self.actions = actions
-        self.pmat = pmat
+        self.players = np.array(players)
+        self.actions = np.array(actions)
+        self.pmat = np.array(pmat)
             
     def checkActions(self) :
         if not self.n == len(self.actions):
@@ -43,6 +147,12 @@ class Game :
             raise IndexError('the wrong number of players\' actions are being described')
             
     def checkActionProfile(self,playersToCheck,actionProfile) :
+        # first check if right number of actions
+#        if not len(self.players) == len(actionProfile) :
+#            raise IndexError('wrong number of actions in action profile')
+#        for player,act in zip(self.players,actionProfile) :
+#            if not len()
+#            
         for i in range(len(actionProfile)) :
             stratWeights = np.array(actionProfile[i])
             # first check that the strategy has the correct length:
